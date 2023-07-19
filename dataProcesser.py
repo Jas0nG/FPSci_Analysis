@@ -36,6 +36,7 @@ def main():
 
     # JasonG: Process each trial
     score = []
+
     for trial in trials:
         query_Target = "SELECT * FROM Targets WHERE [spawn_time] <= '{0}' AND [spawn_time] >= '{1}'".format(
             trial.endTime, trial.startTime
@@ -51,14 +52,14 @@ def main():
         )
         # JasonG: Trajectory of the target stays the same within a trial in our implementation
         traj = TargetTrajectory(*db.queryDb(query_Traget_Traj)[0])
+        print(
+            "====Trial:",
+            trial.index,
+            "Uses:",
+            float(trial.taskExecTime) * 1000,
+            "ms====",
+        )
         if showDebugInfo:
-            print(
-                "====Trial:",
-                trial.index,
-                "Uses:",
-                float(trial.taskExecTime) * 1000,
-                "ms====",
-            )
             print("Start Time:  ", trial.startTime)
             print("End Time:    ", trial.endTime)
             # JasonG: Target spawn after 7us(0.007ms) after trial start, this duration could be ignored
@@ -66,11 +67,33 @@ def main():
         query_destory = "SELECT * FROM Player_Action WHERE [time] <= '{0}' AND [time] >= '{1}'  AND [event] == 'destroy'".format(
             trial.endTime, trial.startTime
         )
-        query_start_aim = "SELECT * FROM Player_Action WHERE [time] <= '{0}' AND [time] >= '{1}'  AND [event] == 'aim'".format(
+        query_start_aim = "SELECT * FROM Player_Action WHERE [time] <= '{0}' AND [time] >= '{1}' ".format(
             trial.endTime, trial.startTime
         )
         action_destory = PlayerAction(*db.queryDb(query_destory)[0])
         action_start_aim = PlayerAction(*db.queryDb(query_start_aim)[0])
+        last_az, last_el = 0.0, 0.0
+        az = []
+        el = []
+        for row in db.queryDb(query_start_aim):
+            action = PlayerAction(*row)
+            # print("time: ",action.time)
+            # print("el: ",action.view_el)
+            # input()
+            # if last_az != action.view_az:
+            az.append(action.view_az + 90)
+            # if last_el != action.view_el:
+            el.append(action.view_el)
+            last_az = action.view_az
+            last_el = action.view_el
+        x = range(len(el))
+        x_ = range(len(az))
+        plt.title("Vertical Angle")
+        plt.plot(x, el)
+        plt.plot(x_, az)
+        plt.xlabel("Index")
+        plt.ylabel("el")
+        plt.show()
         if showDebugInfo:
             print("Destory Time:", action_destory.time)
             print("Start Aim Time:", action_start_aim.time)
@@ -86,14 +109,20 @@ def main():
         score.append(trial.taskExecTime / angle)
 
     print("Ave Result:", sum(score) / len(score), "s/deg")
+    
+    # x = range(len(az))
+    # plt.title(sys.argv[1])
+    # plt.scatter(x, az)
+    # plt.xlabel("Trial Index")
+    # plt.ylabel("Uses Time per Degree(lower the better)")
+    # plt.show()
 
-    x = range(len(score))
-    plt.title(sys.argv[1])
-    plt.plot(x, score)
-    plt.xlabel("Trial Index")
-    plt.ylabel("Uses Time per Degree(lower the better)")
-    plt.show()
-
+    # x = range(len(el))
+    # plt.title(sys.argv[1])
+    # plt.scatter(x, el)
+    # plt.xlabel("Trial Index")
+    # plt.ylabel("Uses Time per Degree(lower the better)")
+    # plt.show()
 
 if __name__ == "__main__":
     main()
