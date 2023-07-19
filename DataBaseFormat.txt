@@ -1,0 +1,138 @@
+Tables:
+Experiments
+===========================
+Columns of table 'Experiments':
+description TEXT
+time TEXT
+hash TEXT
+config TEXT
+Sessions
+===========================
+Columns of table 'Sessions':
+session_id TEXT
+start_time TEXT
+end_time TEXT
+subject_id TEXT
+description TEXT
+complete BOOLEAN
+tasks_complete INTEGER
+trials_complete INTEGER
+frameRate TEXT
+frameDelay TEXT
+Tasks
+===========================
+Columns of table 'Tasks':
+session_id TEXT
+block_id INTEGER
+task_id TEXT
+task_index INTEGER
+start_time TEXT
+end_time TEXT
+trial_order TEXT
+trials_complete INTEGER
+complete BOOLEAN
+Target_Types
+===========================
+Columns of table 'Target_Types':
+target_type TEXT
+motion_type TEXT
+dest_space TEXT
+min_size REAL
+max_size REAL
+symmetric_ecc_h BOOLEAN
+symmetric_ecc_v BOOLEAN
+min_ecc_h REAL
+min_ecc_v REAL
+max_ecc_h REAL
+max_ecc_v REAL
+min_speed REAL
+max_speed REAL
+min_motion_change_period REAL
+max_motion_change_period REAL
+jump_enabled BOOLEAN
+model_file TEXT
+Targets
+===========================
+Columns of table 'Targets':
+target_id TEXT
+target_type TEXT
+spawn_time TEXT
+size REAL
+spawn_ecc_h REAL
+spawn_ecc_v REAL
+Trials
+===========================
+Columns of table 'Trials':
+session_id TEXT
+block_id TEXT
+task_id TEXT
+task_index INTEGER
+trial_id TEXT
+trial_index INTEGER
+start_time TEXT
+end_time TEXT
+pretrial_duration REAL
+task_execution_time REAL
+destroyed_targets INTEGER
+total_targets INTEGER
+Target_Trajectory
+===========================
+Columns of table 'Target_Trajectory':
+time TEXT
+target_id TEXT
+state TEXT
+position_x REAL
+position_y REAL
+position_z REAL
+Player_Action
+===========================
+Columns of table 'Player_Action':
+time TEXT
+position_az REAL
+position_el REAL
+position_x REAL
+position_y REAL
+position_z REAL
+state TEXT
+event TEXT
+target_id TEXT
+Frame_Info
+===========================
+Columns of table 'Frame_Info':
+time TEXT
+sdt REAL
+Questions
+===========================
+Columns of table 'Questions':
+time TEXT
+session_id TEXT
+task_id TEXT
+task_index INTEGER
+trial_id TEXT
+trial_index INTEGER
+question TEXT
+response_array TEXT
+key_array TEXT
+presented_responses TEXT
+response TEXT
+Users
+===========================
+Columns of table 'Users':
+subject_id TEXT
+session_id TEXT
+time TEXT
+cmp360 REAL
+mouse_deg_per_mm REAL
+mouse_dpi REAL
+reticle_index INT
+min_reticle_scale REAL
+max_reticle_scale REAL
+min_reticle_color TEXT
+max_reticle_color TEXT
+reticle_change_time REAL
+user_turn_scale_x REAL
+user_turn_scale_y REAL
+sess_turn_scale_x REAL
+sess_turn_scale_y REAL
+sensitivity_x REAL
+sensitivity_y REAL
