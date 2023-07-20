@@ -4,24 +4,41 @@ from FPSci_Importer.struct_define import *
 import sys
 import numpy as np
 import math
-import matplotlib.pyplot as plt
 
 
-def polarAngle(theta1_d, phi1_d, theta2_d, phi2_d):
-    # 转换为弧度
-    theta1 = math.radians(theta1_d)
-    phi1 = math.radians(phi1_d)
-    theta2 = math.radians(theta2_d)
-    phi2 = math.radians(phi2_d)
-    # 计算夹角的余弦值
-    cos_angle = math.sin(theta1) * math.sin(theta2) * math.cos(phi1 - phi2) + math.cos(
-        theta1
-    ) * math.cos(theta2)
-    # 通过反余弦函数获取夹角的弧度值
-    angle_rad = math.acos(cos_angle)
-    # 将弧度转换为度数
-    angle_deg = math.degrees(angle_rad)
-    return angle_deg
+def reactionAnalysis(aimAngle, timeline):
+    for i in range(len(aimAngle)):
+        if aimAngle[i] > 0.5:
+            return timeline[i]
+
+
+def reactionAnalysis(aimAngleTimeline):
+    sorted(aimAngleTimeline)
+    for i in range(len(list(aimAngleTimeline.values()))):
+        if list(aimAngleTimeline.values())[i] > 0.5:
+            return list(aimAngleTimeline.keys())[i]
+    return 0
+
+
+def visualizeTimeline(timeline, title, ylable):
+    plt.style.use("seaborn")
+    plt.plot(list(timeline.keys()), list(timeline.values()))
+    plt.xlabel("Time(ms)")
+    plt.ylabel(ylable)
+    plt.title(title)
+    plt.show()
+
+
+def visualizeTimeline(timeline_1, title_1, ylable_1, timeline_2, title_2, ylable_2):
+    plt.style.use("seaborn")
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+    axes[0].plot(list(timeline_1.keys()), list(timeline_1.values()))
+    axes[0].set_ylabel(ylable_1)
+    axes[0].set_title(title_1)
+    axes[1].plot(list(timeline_2.keys()), list(timeline_2.values()))
+    axes[1].set_ylabel(ylable_2)
+    axes[1].set_title(title_2)
+    plt.show()
 
 
 if len(sys.argv) < 2:
@@ -29,14 +46,34 @@ if len(sys.argv) < 2:
 
 
 def main():
-    showDebugInfo = False
+    #                      Parameters                            #
+    doOutlierDetection = False
+    visualize_Vel_Ang = False
+    #############################################################
+
     # Get the database
     db = Importer(sys.argv[1])
     trials = db.getTrials()
 
-    # JasonG: Process each trial
     score = []
+    recognitionTime = []
+    # JasonG: Get the user information, mainly for sensitivity
+    query_User = "SELECT * FROM Users"
+    user = Users(*db.queryDb(query_User)[len(db.queryDb(query_User)) - 1])
+    # JasonG: mapX, mapY表示鼠标每移动1cm，视角水平和垂直方向的变化角度
+    mapX = 360 / user.sensitivity_x
+    mapY = 360 / user.sensitivity_y
+    max_speed = 30  # 100 cm/s
+    max_angular_speed_x = max_speed * mapX  # degree/s
+    max_angular_speed_y = max_speed * mapY  # degree/s
+    print(
+        "max_angular_speed_x:",
+        max_angular_speed_x,
+        "max_angular_speed_y:",
+        max_angular_speed_y,
+    )
 
+    # JasonG: Process each trial
     for trial in trials:
         query_Target = "SELECT * FROM Targets WHERE [spawn_time] <= '{0}' AND [spawn_time] >= '{1}'".format(
             trial.endTime, trial.startTime
@@ -52,77 +89,78 @@ def main():
         )
         # JasonG: Trajectory of the target stays the same within a trial in our implementation
         traj = TargetTrajectory(*db.queryDb(query_Traget_Traj)[0])
-        print(
-            "====Trial:",
-            trial.index,
-            "Uses:",
-            float(trial.taskExecTime) * 1000,
-            "ms====",
-        )
-        if showDebugInfo:
-            print("Start Time:  ", trial.startTime)
-            print("End Time:    ", trial.endTime)
-            # JasonG: Target spawn after 7us(0.007ms) after trial start, this duration could be ignored
-            print("Target Spwan:", target.spawn_time)
+        # print(
+        #     "====Trial:",
+        #     trial.index,
+        #     "Uses:",
+        #     float(trial.taskExecTime) * 1000,
+        #     "ms====",
+        # )
         query_destory = "SELECT * FROM Player_Action WHERE [time] <= '{0}' AND [time] >= '{1}'  AND [event] == 'destroy'".format(
             trial.endTime, trial.startTime
         )
-        query_start_aim = "SELECT * FROM Player_Action WHERE [time] <= '{0}' AND [time] >= '{1}' ".format(
+        query_aim = "SELECT * FROM Player_Action WHERE [time] <= '{0}' AND [time] >= '{1}' ".format(
             trial.endTime, trial.startTime
         )
         action_destory = PlayerAction(*db.queryDb(query_destory)[0])
-        action_start_aim = PlayerAction(*db.queryDb(query_start_aim)[0])
-        last_az, last_el = 0.0, 0.0
-        az = []
-        el = []
-        for row in db.queryDb(query_start_aim):
+        action_start_aim = PlayerAction(*db.queryDb(query_aim)[0])
+        aim_start_bearing = Bearing(action_start_aim.view_az, action_start_aim.view_el)
+        last_bearing = Bearing()
+        aim_angle_Timeline, aim_vel_Timeline = {}, {}
+        last_timeStamp = 0
+        for row in db.queryDb(query_aim):
             action = PlayerAction(*row)
-            # print("time: ",action.time)
-            # print("el: ",action.view_el)
-            # input()
-            # if last_az != action.view_az:
-            az.append(action.view_az + 90)
-            # if last_el != action.view_el:
-            el.append(action.view_el)
-            last_az = action.view_az
-            last_el = action.view_el
-        x = range(len(el))
-        x_ = range(len(az))
-        plt.title("Vertical Angle")
-        plt.plot(x, el)
-        plt.plot(x_, az)
-        plt.xlabel("Index")
-        plt.ylabel("el")
-        plt.show()
-        if showDebugInfo:
-            print("Destory Time:", action_destory.time)
-            print("Start Aim Time:", action_start_aim.time)
-            print("Start Bearing:", action_start_aim.view_az, action_start_aim.view_el)
-            print("Destory Bearing:", action_destory.view_az, action_destory.view_el)
-        angle = polarAngle(
-            action_start_aim.view_az,
-            action_start_aim.view_el,
-            action_destory.view_az,
-            action_destory.view_el,
-        )
-        # Lower the better
-        score.append(trial.taskExecTime / angle)
+            timeStamp = (
+                action.time - action_start_aim.time
+            ).total_seconds() * 1e3  # JasonG: 从action开始的时间戳 ms
+            aim_moving_bearing = Bearing(action.view_az, action.view_el)
+            # JasonG: skip 1st frame
+            if last_timeStamp == 0:
+                last_bearing = aim_moving_bearing
+                last_timeStamp = timeStamp
+                continue
+            # JasonG: 角速度 = (当前方位角 - 上一帧方位角) / (当前时间戳 - 上一帧时间戳)
+            ang_vel = (
+                (aim_moving_bearing - last_bearing) / (timeStamp - last_timeStamp) * 1e3
+            )  # degree/s
+            if not doOutlierDetection:
+                aim_vel_Timeline[timeStamp] = ang_vel
+                aim_angle_Timeline[timeStamp] = aim_moving_bearing - aim_start_bearing
+            else:
+                if ang_vel < max_angular_speed_x:
+                    aim_vel_Timeline[timeStamp] = ang_vel
+                    aim_angle_Timeline[timeStamp] = (
+                        aim_moving_bearing - aim_start_bearing
+                    )
+                else:
+                    # JasonG: Outlier detected
+                    print("detected OD")
+                    continue
+            last_bearing = aim_moving_bearing
+            last_timeStamp = timeStamp
+        if visualize_Vel_Ang:
+            visualizeTimeline(
+                aim_vel_Timeline,
+                "Angular Velocity",
+                "Angular Velocity(degree/s)",
+                aim_angle_Timeline,
+                "Aim Angle",
+                "Aim Angle(degree)",
+            )
+        recTime = reactionAnalysis(aim_angle_Timeline)
+        if 80 < recTime < 400:
+            recognitionTime.append(recTime)
+    # end for trial in trials
 
-    print("Ave Result:", sum(score) / len(score), "s/deg")
-    
-    # x = range(len(az))
-    # plt.title(sys.argv[1])
-    # plt.scatter(x, az)
-    # plt.xlabel("Trial Index")
-    # plt.ylabel("Uses Time per Degree(lower the better)")
-    # plt.show()
+    # Plot Reaction time
+    plt.figure(sys.argv[1])
+    plt.style.use("seaborn")
+    plt.hist(recognitionTime, bins=20, edgecolor="black", linewidth=1.2)
+    plt.xlabel("Recognition Time(ms)")
+    plt.ylabel("Frequency")
+    plt.title("Recognition Time Distribution")
+    plt.show()
 
-    # x = range(len(el))
-    # plt.title(sys.argv[1])
-    # plt.scatter(x, el)
-    # plt.xlabel("Trial Index")
-    # plt.ylabel("Uses Time per Degree(lower the better)")
-    # plt.show()
 
 if __name__ == "__main__":
     main()

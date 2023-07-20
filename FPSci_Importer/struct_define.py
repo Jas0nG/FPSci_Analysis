@@ -1,5 +1,26 @@
 from datetime import datetime
+import math
 IN_LOG_TIME_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+
+def polarAngle(theta1_d, phi1_d, theta2_d, phi2_d):
+    # 转换为弧度
+    theta1 = math.radians(theta1_d)
+    phi1 = math.radians(phi1_d)
+    theta2 = math.radians(theta2_d)
+    phi2 = math.radians(phi2_d)
+    # 计算夹角的余弦值
+    cos_angle = math.sin(theta1) * math.sin(theta2) * math.cos(phi1 - phi2) + math.cos(
+        theta1
+    ) * math.cos(theta2)
+    if cos_angle < 1e-6:
+        return 0.0
+    if cos_angle > 1.0:
+        cos_angle = 1.0
+    # 通过反余弦函数获取夹角的弧度值
+    angle_rad = math.acos(cos_angle)
+    # 将弧度转换为度数
+    angle_deg = math.degrees(angle_rad)
+    return angle_deg
 
 class Trial:
     def __init__(self, sessionId, blockId, tastId, tastIndex, trialId, trialIndex, startTime, endTime, duaration, taskExecTime, destroyedTargets, totalTargets, index=-1):
@@ -83,3 +104,40 @@ class Click:
         self.elev = elev
         self.hit = hit
         self.clicktophoton = clicktophoton
+
+class Users:
+    def __init__(self,subject_id,session_id,time,cmp360,mouse_deg_per_mm,mouse_dpi,reticle_index,min_reticle_scale,max_reticle_scale,min_reticle_color,max_reticle_color,reticle_change_time,user_turn_scale_x,user_turn_scale_y,sess_turn_scale_x,sess_turn_scale_y,sensitivity_x,sensitivity_y):
+        self.subject_id = subject_id
+        self.session_id = session_id
+        self.time = time
+        self.cmp360 = cmp360
+        self.mouse_deg_per_mm = mouse_deg_per_mm
+        self.mouse_dpi = mouse_dpi
+        self.reticle_index = reticle_index
+        self.min_reticle_scale = min_reticle_scale
+        self.max_reticle_scale = max_reticle_scale
+        self.min_reticle_color = min_reticle_color
+        self.max_reticle_color = max_reticle_color
+        self.reticle_change_time = reticle_change_time
+        self.user_turn_scale_x = user_turn_scale_x
+        self.user_turn_scale_y = user_turn_scale_y
+        self.sess_turn_scale_x = sess_turn_scale_x
+        self.sess_turn_scale_y = sess_turn_scale_y
+        self.sensitivity_x = sensitivity_x
+        self.sensitivity_y = sensitivity_y
+
+class Bearing:
+    def __init__(self):
+        self.azimuth = 0
+        self.elevation = 0
+
+    def __init__(self, azimuth=0, elevation=0):
+        self.azimuth = azimuth
+        self.elevation = elevation
+
+    def __sub__(self,other) ->float:
+        return polarAngle(other.azimuth, other.elevation, self.azimuth, self.elevation)
+
+    def Angle(self)->float:
+        return polarAngle(0, 0, self.azimuth, self.elevation)
+    
