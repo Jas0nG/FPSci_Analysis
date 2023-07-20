@@ -127,13 +127,21 @@ class Users:
         self.sensitivity_y = sensitivity_y
 
 class Bearing:
-    def __init__(self):
-        self.azimuth = 0
-        self.elevation = 0
 
-    def __init__(self, azimuth=0, elevation=0):
-        self.azimuth = azimuth
-        self.elevation = elevation
+    def __init__(self, param1=None, param2=None):
+        if param1 is not None and param2 is not None:
+            # 构造函数接收两个参数的情况
+            self.azimuth = param1
+            self.elevation = param2
+        elif param1 is not None:
+            # 构造函数接收一个参数的情况
+            self.azimuth = param1.view_az
+            self.elevation = param1.view_el
+        else:
+            # 构造函数未接收参数的情况
+            self.azimuth = 0
+            self.elevation = 0
+
 
     def __sub__(self,other) ->float:
         return polarAngle(other.azimuth, other.elevation, self.azimuth, self.elevation)

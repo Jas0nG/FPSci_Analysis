@@ -104,16 +104,20 @@ def main():
         )
         action_destory = PlayerAction(*db.queryDb(query_destory)[0])
         action_start_aim = PlayerAction(*db.queryDb(query_aim)[0])
-        aim_start_bearing = Bearing(action_start_aim.view_az, action_start_aim.view_el)
+        target_bearing = Bearing(action_destory)
+        aim_start_bearing = Bearing(action_start_aim)
         last_bearing = Bearing()
         aim_angle_Timeline, aim_vel_Timeline = {}, {}
         last_timeStamp = 0
+
+        total_angle = target_bearing - aim_start_bearing
+        recognition = 0
         for row in db.queryDb(query_aim):
             action = PlayerAction(*row)
             timeStamp = (
                 action.time - action_start_aim.time
             ).total_seconds() * 1e3  # JasonG: 从action开始的时间戳 ms
-            aim_moving_bearing = Bearing(action.view_az, action.view_el)
+            aim_moving_bearing = Bearing(action)
             # JasonG: skip 1st frame
             if last_timeStamp == 0:
                 last_bearing = aim_moving_bearing
@@ -136,6 +140,9 @@ def main():
                     # JasonG: Outlier detected
                     print("detected OD")
                     continue
+            if aim_moving_bearing - aim_start_bearing > total_angle * 0.05 and recognition == 0:
+                recognition = 1
+                recognitionTime.append(timeStamp)
             last_bearing = aim_moving_bearing
             last_timeStamp = timeStamp
         if visualize_Vel_Ang:
@@ -147,9 +154,9 @@ def main():
                 "Aim Angle",
                 "Aim Angle(degree)",
             )
-        recTime = reactionAnalysis(aim_angle_Timeline)
-        if 80 < recTime < 400:
-            recognitionTime.append(recTime)
+        # recTime = reactionAnalysis(aim_angle_Timeline)
+        # if 80 < recTime < 400:
+            # recognitionTime.append(recTime)
     # end for trial in trials
 
     # Plot Reaction time
