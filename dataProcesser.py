@@ -3,14 +3,8 @@ from FPSci_Importer.Importer import Importer
 from FPSci_Importer.struct_define import *
 import sys
 import numpy as np
+import pandas as pd
 import math
-
-
-def reactionAnalysis(aimAngle, timeline):
-    for i in range(len(aimAngle)):
-        if aimAngle[i] > 0.5:
-            return timeline[i]
-
 
 def reactionAnalysis(aimAngleTimeline):
     sorted(aimAngleTimeline)
@@ -20,25 +14,32 @@ def reactionAnalysis(aimAngleTimeline):
     return 0
 
 
-def visualizeTimeline(timeline, title, ylable):
+def visualizeTimeline(timeline_1, title_1, ylable_1, timeline_2=None, title_2=None, ylable_2=None):
     plt.style.use("seaborn")
-    plt.plot(list(timeline.keys()), list(timeline.values()))
-    plt.xlabel("Time(ms)")
-    plt.ylabel(ylable)
-    plt.title(title)
+    if timeline_2 is not None and title_2 is not None and ylable_2 is not None:
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+        axes[0].plot(list(timeline_1.keys()), list(timeline_1.values()))
+        axes[0].set_ylabel(ylable_1)
+        axes[0].set_title(title_1)
+        axes[1].plot(list(timeline_2.keys()), list(timeline_2.values()))
+        axes[1].set_ylabel(ylable_2)
+        axes[1].set_title(title_2)
+    else:
+        plt.plot(list(timeline_1.keys()), list(timeline_1.values()))
+        plt.xlabel("Time(ms)")
+        plt.ylabel(ylable_1)
+        plt.title(title_1)
     plt.show()
 
+def find_relative_minima(arr):
+    minima_indices = []
+    winSize = 20
 
-def visualizeTimeline(timeline_1, title_1, ylable_1, timeline_2, title_2, ylable_2):
-    plt.style.use("seaborn")
-    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-    axes[0].plot(list(timeline_1.keys()), list(timeline_1.values()))
-    axes[0].set_ylabel(ylable_1)
-    axes[0].set_title(title_1)
-    axes[1].plot(list(timeline_2.keys()), list(timeline_2.values()))
-    axes[1].set_ylabel(ylable_2)
-    axes[1].set_title(title_2)
-    plt.show()
+    for i in range(winSize, len(arr) - winSize):
+        if arr[i] < min(arr[i-winSize:i]) or arr[i] < min(arr[i+1:i+winSize+1]):
+            minima_indices.append(i)
+
+    return minima_indices
 
 
 if len(sys.argv) < 2:
@@ -130,6 +131,7 @@ def main():
             if not doOutlierDetection:
                 aim_vel_Timeline[timeStamp] = ang_vel
                 aim_angle_Timeline[timeStamp] = aim_moving_bearing - aim_start_bearing
+                # minima_indiaces = find_relative_minima(list(aim_vel_Timeline.values()))
             else:
                 if ang_vel < max_angular_speed_x:
                     aim_vel_Timeline[timeStamp] = ang_vel
@@ -140,19 +142,34 @@ def main():
                     # JasonG: Outlier detected
                     print("detected OD")
                     continue
-            if aim_moving_bearing - aim_start_bearing > total_angle * 0.05 and recognition == 0:
-                recognition = 1
-                recognitionTime.append(timeStamp)
+        series_velocity = pd.Series(aim_vel_Timeline)
+        series_angle    = pd.Series(aim_angle_Timeline)
+        print(series_velocity)
+        print(series_velocity.describe())
+        input()
+
+        if aim_moving_bearing - aim_start_bearing > total_angle * 0.05 and recognition == 0:
+            recognition = 1
+            recognitionTime.append(timeStamp)
+            # if timeStamp < 80:
+            #     visualizeTimeline(
+            #         aim_vel_Timeline,
+            #         "Angular Velocity",
+            #         "Angular Velocity(degree/s)",
+            #         aim_angle_Timeline,
+            #         "Aim Angle",
+            #         "Aim Angle(degree)",
+            #     )
             last_bearing = aim_moving_bearing
             last_timeStamp = timeStamp
-        if visualize_Vel_Ang:
+        if visualize_Vel_Ang or True:
             visualizeTimeline(
                 aim_vel_Timeline,
                 "Angular Velocity",
                 "Angular Velocity(degree/s)",
                 aim_angle_Timeline,
                 "Aim Angle",
-                "Aim Angle(degree)",
+                "Aim Angle(degree)"
             )
         # recTime = reactionAnalysis(aim_angle_Timeline)
         # if 80 < recTime < 400:

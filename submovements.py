@@ -63,11 +63,12 @@ for trial in trials:
         
         # 计算滤波后的角速度
         velocity_filtered = np.sqrt((d_azimuth_filtered / dt)**2 + (d_elevation_filtered / dt)**2)
-        velocity_filtered_list.append(velocity_filtered)
-        
         # 如果当前角速度与上一帧的角速度的差值绝对值大于100，则将当前角速度设为上一帧的角速度
-        if len(velocity_filtered_list) > 1 and abs(velocity_filtered_list[-1] - velocity_filtered_list[-2]) > 100:
-            velocity_filtered_list[-1] = velocity_filtered_list[-2]
+        if len(velocity_filtered_list) > 1 and abs(velocity_filtered - velocity_filtered_list[-1]) > 100:
+            velocity_filtered = velocity_filtered_list[-1]
+        velocity_filtered_list.append(velocity_filtered)
+
+        
 
         # 另一种数据处理方法：对角速度数据进行高斯滤波处理
         sigma = 3
@@ -86,7 +87,8 @@ for trial in trials:
                 tstart = time[i]
                 submovements.append({'start_time': tstart, 
                                      'start_azimuth': azimuth_filtered[i-1], 
-                                     'start_elevation': elevation_filtered[i-1]})
+                                     'start_elevation': elevation_filtered[i-1], 
+                                     'start_velocity': velocity_filtered})
 
     # Add end details for the last submovement if we end in a submovement
     if in_submovement:
@@ -120,6 +122,7 @@ for trial in trials:
     ax[1].scatter(time[1:], velocity_filtered_list, marker='o', s=3, label='Filtered Velocity')
     ax[1].set_ylabel('Filtered angular velocity')
     for submovement in submovements:
+        plt.text(submovement['start_time'], submovement['start_velocity'] * 2 , round(submovement['start_velocity'],2))
         plt.axvline(x=submovement['start_time'], color='r', linestyle='--')
         plt.axvline(x=submovement['end_time'], color='b', linestyle='--')
     plt.show()
